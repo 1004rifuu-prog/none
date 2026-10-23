@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一番決定！パーティーお題ガチャ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Zen Maru Gothic for pop & friendly look -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            min-height: 100vh;
+        }
+        .pop-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .text-stroke {
+            -webkit-text-stroke: 1.5px #1e293b;
+        }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-short {
+            animation: bounce-short 0.6s ease-in-out infinite;
+        }
+        /* Slot machine blur effect during rolling */
+        .rolling {
+            filter: blur(1.5px);
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="w-full py-6 px-4 text-center">
+        <div class="max-w-3xl mx-auto">
+            <span class="inline-block bg-white/80 text-orange-600 px-4 py-1 rounded-full text-sm font-bold mb-2 shadow-sm">
+                <i class="fa-solid fa-dice text-orange-500 mr-1.5"></i> パーティーゲーム決定版
+            </span>
+            <h1 class="text-3xl sm:text-5xl font-black text-white text-stroke drop-shadow-md tracking-wider">
+                一番だれだ！？<span class="text-yellow-300">お題ガチャ</span>
+            </h1>
+            <p class="text-white/90 text-sm sm:text-base mt-2 font-bold drop-shadow">
+                ボタンを押して、グループの「一番」を決めよう！スペースキーでも回せます✨
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow container mx-auto px-4 pb-12 max-w-3xl">
+        
+        <!-- Category Selector -->
+        <div class="flex flex-wrap justify-center gap-2 mb-6">
+            <button onclick="setCategory('all')" id="cat-all" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-orange-600 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-orange-500">
+                🔥 すべて (100)
+            </button>
+            <button onclick="setCategory('money')" id="cat-money" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent">
+                💰 モノ・お金
+            </button>
+            <button onclick="setCategory('episode')" id="cat-episode" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent">
+                📖 エピソード
+            </button>
+            <button onclick="setCategory('digital')" id="cat-digital" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent">
+                📱 スマホ・SNS
+            </button>
+            <button onclick="setCategory('skill')" id="cat-skill" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent">
+                🏆 特技・能力
+            </button>
+            <button onclick="setCategory('funny')" id="cat-funny" class="cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent">
+                🤪 笑える・ヤバい
+            </button>
+        </div>
+
+        <!-- Slot / Display Card -->
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-10 pop-shadow border-4 border-white mb-8 relative overflow-hidden text-center transition-all duration-300">
+            <!-- Top badge -->
+            <div class="flex justify-between items-center mb-4">
+                <span id="current-category-badge" class="bg-orange-100 text-orange-700 text-xs sm:text-sm font-bold px-3 py-1 rounded-full">
+                    総合お題
+                </span>
+                <button onclick="toggleFavoriteCurrent()" id="fav-btn" class="text-slate-300 hover:text-red-500 text-2xl transition-colors" title="お気に入りに追加">
+                    <i class="fa-solid fa-heart"></i>
+                </button>
+            </div>
+
+            <!-- Theme Display Area -->
+            <div class="min-h-[140px] sm:min-h-[160px] flex items-center justify-center my-4">
+                <h2 id="theme-display" class="text-2xl sm:text-4xl font-black text-slate-800 leading-snug tracking-tight transition-all duration-100">
+                    「ガチャを回して<br>お題を決めよう！」
+                </h2>
+            </div>
+
+            <!-- Action Button -->
+            <div class="mt-6">
+                <button id="spin-btn" onclick="spinGacha()" class="w-full sm:w-auto px-10 py-5 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-black text-xl sm:text-2xl rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 transition-all duration-150 flex items-center justify-center mx-auto gap-3">
+                    <i class="fa-solid fa-rotate text-2xl animate-spin-slow"></i>
+                    <span>お題をガチャる！</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs for History & Favorites -->
+        <div class="bg-white/80 backdrop-blur-md rounded-3xl p-5 pop-shadow border-2 border-white">
+            <div class="flex border-b border-slate-200 mb-4">
+                <button onclick="switchTab('history')" id="tab-history" class="flex-1 pb-3 font-bold text-orange-600 border-b-4 border-orange-500 text-center transition-all">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> 出たお題履歴 (<span id="history-count">0</span>)
+                </button>
+                <button onclick="switchTab('favorites')" id="tab-favorites" class="flex-1 pb-3 font-bold text-slate-400 border-b-4 border-transparent text-center transition-all">
+                    <i class="fa-solid fa-heart mr-1 text-red-500"></i> お気に入り (<span id="fav-count">0</span>)
+                </button>
+            </div>
+
+            <!-- History List View -->
+            <div id="view-history" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <div class="text-center text-slate-400 py-6 text-sm">
+                    まだ履歴はありません。ガチャを回してみよう！
+                </div>
+            </div>
+
+            <!-- Favorites List View -->
+            <div id="view-favorites" class="space-y-2 max-h-60 overflow-y-auto pr-1 hidden">
+                <div class="text-center text-slate-400 py-6 text-sm">
+                    お気に入り登録されたお題はありません。
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-white/80 text-xs font-bold">
+        &copy; 2026 一番決定！パーティーお題ガチャ | 友人同士や飲み会、パーティーで盛り上がろう！
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white px-6 py-3 rounded-2xl shadow-xl font-bold text-sm opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toast-msg">通知メッセージ</span>
+    </div>
+
+    <script>
+        // 100個のバラエティ豊かなお題データ (カテゴリ付き)
+        const themes = [
+            // モノ・お金 (20)
+            { id: 1, category: 'money', text: "財布の中に一番小銭が入っている人" },
+            { id: 2, category: 'money', text: "私有物で一番高いものを持っている人（スマホ・時計など）" },
+            { id: 3, category: 'money', text: "一番キャッシュレスに頼っていて現金を持っていない人" },
+            { id: 4, category: 'money', text: "今カバンの中に一番たくさんのレシートが入っている人" },
+            { id: 5, category: 'money', text: "一番高い自販機のジュースや高級お菓子を日常的に買う人" },
+            { id: 6, category: 'money', text: "一番最近大きな買い物（1万円以上）をした人" },
+            { id: 7, category: 'money', text: "一番ポイントカードやアプリのポイントを貯めている人" },
+            { id: 8, category: 'money', text: "一番高価なスマホケースやアクセサリをつけている人" },
+            { id: 9, category: 'money', text: "一番財布がボロボロ、またはこだわりが強い人" },
+            { id: 10, category: 'money', text: "一番無駄遣いして後悔したエピソードを持っている人" },
+            { id: 11, category: 'money', text: "一番お年玉やアルバイト代の使い道に夢があった人" },
+            { id: 12, category: 'money', text: "一番リッチな朝食やランチを食べてきた人" },
+            { id: 13, category: 'money', text: "一番クレジットカードの枚数を持っている人" },
+            { id: 14, category: 'money', text: "一番セールやクーポンを見つけるのが得意な人" },
+            { id: 15, category: 'money', text: "一番お金をかけた趣味や推し活をしている人" },
+            { id: 16, category: 'money', text: "一番自販機で当たりを出した回数が多い人" },
+            { id: 17, category: 'money', text: "一番お気に入りのブランドやこだわりアイテムがある人" },
+            { id: 18, category: 'money', text: "一番ガチャガチャやクレーンゲームにお金を使った人" },
+            { id: 19, category: 'money', text: "一番貯金や将来の資産形成に熱心な人" },
+            { id: 20, category: 'money', text: "一番プレミアムな体験（ファーストクラスや高級ホテルなど）をしたことがある人" },
+
+            // エピソード (25)
+            { id: 21, category: 'episode', text: "人生で一番大きなけがをした人" },
+            { id: 22, category: 'episode', text: "人生で一番ドラマチックな告白・失恋をした人" },
+            { id: 23, category: 'episode', text: "一番盛大に寝坊して大遅刻したエピソードがある人" },
+            { id: 24, category: 'episode', text: "一番運命的な偶然や奇跡を体験した人" },
+            { id: 25, category: 'episode', text: "一番恥ずかしかった「人違い・名前間違い」の思い出がある人" },
+            { id: 26, category: 'episode', text: "一番激しい修羅場やピンチを切り抜けた人" },
+            { id: 27, category: 'episode', text: "一番おバカな勘違いを堂々としていた人" },
+            { id: 28, category: 'episode', text: "一番芸能人に遭遇した、または目撃した回数が多い人" },
+            { id: 29, category: 'episode', text: "一番海外でトラブルに巻き込まれかけた人" },
+            { id: 30, category: 'episode', text: "一番感動して映画やドラマで号泣した人" },
+            { id: 31, category: 'episode', text: "一番人生の分かれ道で大胆な決断をした人" },
+            { id: 32, category: 'episode', text: "一番子供のころにやらかしたヤンチャなイタズラがすごい人" },
+            { id: 33, category: 'episode', text: "一番奇跡的なクジ引きやビンゴの当選をした人" },
+            { id: 34, category: 'episode', text: "一番感動的なサプライズを計画・またはされた人" },
+            { id: 35, category: 'episode', text: "一番学校や職場で伝説を作った人" },
+            { id: 36, category: 'episode', text: "一番理不尽な理由で怒られたことがある人" },
+            { id: 37, category: 'episode', text: "一番の「人生最大のピンチ」を自力で脱出した人" },
+            { id: 38, category: 'episode', text: "一番変わったアルバイトや仕事をした経験がある人" },
+            { id: 39, category: 'episode', text: "一番怖かった心霊体験や不思議な体験をした人" },
+            { id: 40, category: 'episode', text: "一番スカッとした「悪人をギャフンと言わせた」話がある人" },
+            { id: 41, category: 'episode', text: "一番感動的な家族との思い出がある人" },
+            { id: 42, category: 'episode', text: "一番の「努力が実を結んだ瞬間」を経験した人" },
+            { id: 43, category: 'episode', text: "一番盛大に料理を焦がしたり大失敗した人" },
+            { id: 44, category: 'episode', text: "一番旅行先でハプニングに満ちていた人" },
+            { id: 45, category: 'episode', text: "一番熱中した部活やサークルの思い出がある人" },
+
+            // スマホ・デジタル (15)
+            { id: 46, category: 'digital', text: "スマホのバッテリー残量が一番少ない人" },
+            { id: 47, category: 'digital', text: "スマホの「スクリーンタイム（使用時間）」が一番長い人" },
+            { id: 48, category: 'digital', text: "スマホのカメラロールの写真枚数が一番多い人" },
+            { id: 49, category: 'digital', text: "未読メールや未読通知の数が一番溜まっている人" },
+            { id: 50, category: 'digital', text: "スマホの画面に一番ヒビが入っている人" },
+            { id: 51, category: 'digital', text: "一番ダウンロードしているアプリの数が多い人" },
+            { id: 52, category: 'digital', text: "一番SNS（InstagramやTikTokなど）のフォロワーが多い人" },
+            { id: 53, category: 'digital', text: "スマホのホーム画面の整理整頓が一番きれいにできている人" },
+            { id: 54, category: 'digital', text: "一番推しの動画や推しアカウントを追いかけている人" },
+            { id: 55, category: 'digital', text: "一番ネットショッピングの履歴が多い人" },
+            { id: 56, category: 'digital', text: "一番スマホの充電器を持ち歩いている人" },
+            { id: 57, category: 'digital', text: "一番昔のガラケーや懐かしい端末に詳しい人" },
+            { id: 58, category: 'digital', text: "一番よく使うスタンプや絵文字にクセがある人" },
+            { id: 59, category: 'digital', text: "一番オンラインゲームやソシャゲのやりこみ度が高い人" },
+            { id: 60, category: 'digital', text: "一番クラウドの容量をパンパンに使っている人" },
+
+            // 特技・能力 (20)
+            { id: 61, category: 'skill', text: "一番手先が器用で細かい作業が得意な人" },
+            { id: 62, category: 'skill', text: "一番漢字の読み書きや雑学知識が豊富な人" },
+            { id: 63, category: 'skill', text: "一番絵を描くセンスやデザイン力がある人" },
+            { id: 64, category: 'skill', text: "一番足が速い、または運動神経に自信がある人" },
+            { id: 65, category: 'skill', text: "一番美味しい料理や特製レシピを作れる人" },
+            { id: 66, category: 'skill', text: "一番歌がうまい、またはモノマネが得意な人" },
+            { id: 67, category: 'skill', text: "一番初対面の人とすぐに仲良くなれるコミュ力がある人" },
+            { id: 68, category: 'skill', text: "一番記憶力が良く、昔の出来事を細かく覚えている人" },
+            { id: 69, category: 'skill', text: "一番タイピングやスマホの文字入力が早い人" },
+            { id: 70, category: 'skill', text: "一番柔軟性が高く、体が柔らかい人" },
+            { id: 71, category: 'skill', text: "一番ものまねや変顔のレパートリーが多い人" },
+            { id: 72, category: 'skill', text: "一番方向音痴ではなく、地図を読むのが得意な人" },
+            { id: 73, category: 'skill', text: "一番ゲーム（対戦・パズル等）で無敗の強さを誇る人" },
+            { id: 74, category: 'skill', text: "一番おしゃれなコーディネートや着こなしができる人" },
+            { id: 75, category: 'skill', text: "一番人前で緊張せずにスピーチや挨拶ができる人" },
+            { id: 76, category: 'skill', text: "一番ルービックキューブやパズルを早く解ける人" },
+            { id: 77, category: 'skill', text: "一番睡眠の質が良く、どこでも秒で眠れる人" },
+            { id: 78, category: 'skill', text: "一番写真や動画を綺麗に撮影するテクニックがある人" },
+            { id: 79, category: 'skill', text: "一番片付けや整理整頓のプロ級の腕前を持っている人" },
+            { id: 80, category: 'skill', text: "一番英語や外国語のリスニング・発音が得意な人" },
+
+            // 笑える・ヤバい (20)
+            { id: 81, category: 'funny', text: "一番最近、盛大に何もないところで転んだ人" },
+            { id: 82, category: 'funny', text: "一番寝言のボリュームが大きかったり内容がヤバい人" },
+            { id: 83, category: 'funny', text: "一番食べるスピードが異常に早い人" },
+            { id: 84, category: 'funny', text: "一番独自の変なこだわりやマイルールを持っている人" },
+            { id: 85, category: 'funny', text: "一番くしゃみや笑い声が特徴的で大きい人く" },
+            { id: 86, category: 'funny', text: "一番子供のころのあだ名や黒歴史が強烈な人" },
+            { id: 87, category: 'funny', text: "一番方向音痴すぎて変なところにたどり着いた人" },
+            { id: 88, category: 'funny', text: "一番他人の名前や顔を覚えるのが苦手な人" },
+            { id: 89, category: 'funny', text: "一番お化け屋敷やホラー系で大パニックになる人" },
+            { id: 90, category: 'funny', text: "一番独自の「ヤバい味の組み合わせ」が好きで食べる人" },
+            { id: 91, category: 'funny', text: "一番朝起きるのが苦手でアラームを何度もスヌーズにする人" },
+            { id: 92, category: 'funny', text: "一番プライベートでうっかりミス（鍵を忘れる等）が多い人" },
+            { id: 93, category: 'funny', text: "一番自分なりの変なジンクスやルーティンを信じている人" },
+            { id: 94, category: 'funny', text: "一番最近、鏡を見て「誰だこれ」と自分でツッコんだ人" },
+            { id: 95, category: 'funny', text: "一番独特すぎるオリジナルポーズや挨拶を持っている人" },
+            { id: 96, category: 'funny', text: "一番靴下やインナーのチョイスに笑えるこだわりがある人" },
+            { id: 97, category: 'funny', text: "一番テレビやネットのミームにめちゃくちゃ詳しい人" },
+            { id: 98, category: 'funny', text: "一番ちょっとしたサプライズで盛大にリアクションしてしまう人" },
+            { id: 99, category: 'funny', text: "一番お腹が鳴る音が大きく、周囲を笑わせた人" },
+            { id: 100, category: 'funny', text: "一番「今ここで一言モノボケして」と言われてやり切れる人" }
+        ];
+
+        // 状態管理
+        let currentCategory = 'all';
+        let currentTheme = null;
+        let history = JSON.parse(localStorage.getItem('gacha_history')) || [];
+        let favorites = JSON.parse(localStorage.getItem('gacha_favorites')) || [];
+        let isSpinning = false;
+
+        // カテゴリ名マッピング
+        const categoryNames = {
+            all: '総合お題',
+            money: '💰 モノ・お金',
+            episode: '📖 エピソード',
+            digital: '📱 スマホ・SNS',
+            skill: '🏆 特技・能力',
+            funny: '🤪 笑える・ヤバい'
+        };
+
+        // 初期化
+        window.onload = function() {
+            updateLists();
+            // 初期表示
+            document.getElementById('theme-display').innerHTML = "「ボタンを押して<br>一番を決めよう！」";
+        };
+
+        // カテゴリ設定
+        function setCategory(cat) {
+            if (isSpinning) return;
+            currentCategory = cat;
+            
+            // ボタンのスタイル更新
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white/70 text-slate-700 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-transparent";
+            });
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            activeBtn.className = "cat-btn px-4 py-2 rounded-xl text-sm font-bold bg-white text-orange-600 shadow-md transition-all hover:scale-105 active:scale-95 border-2 border-orange-500";
+            
+            document.getElementById('current-category-badge').innerText = categoryNames[cat];
+            showToast(`${categoryNames[cat]} カテゴリを選択しました`);
+        }
+
+        // ガチャを回すメイン処理
+        function spinGacha() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const spinBtn = document.getElementById('spin-btn');
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            const display = document.getElementById('theme-display');
+            display.classList.add('rolling');
+
+            // 該当カテゴリのテーマ抽出
+            let pool = currentCategory === 'all' 
+                ? themes 
+                : themes.filter(t => t.category === currentCategory);
+
+            if (pool.length === 0) {
+                pool = themes;
+            }
+
+            let counter = 0;
+            const totalSteps = 18; // パラパラ変わる回数
+            let intervalTime = 50;
+
+            const rollInterval = setInterval(() => {
+                const randomItem = pool[Math.floor(Math.random() * pool.length)];
+                display.innerText = randomItem.text;
+                counter++;
+
+                // だんだん遅くする演出
+                if (counter > 12) {
+                    clearInterval(rollInterval);
+                    slowDownRoll(pool, display, spinBtn);
+                }
+            }, intervalTime);
+        }
+
+        // スローダウン演出
+        function slowDownRoll(pool, display, spinBtn) {
+            let steps = 0;
+            const maxSteps = 5;
+            let currentDelay = 100;
+
+            function nextStep() {
+                if (steps < maxSteps) {
+                    const randomItem = pool[Math.floor(Math.random() * pool.length)];
+                    display.innerText = randomItem.text;
+                    steps++;
+                    currentDelay += 80;
+                    setTimeout(nextStep, currentDelay);
+                } else {
+                    // 最終決定
+                    const finalItem = pool[Math.floor(Math.random() * pool.length)];
+                    currentTheme = finalItem;
+                    display.innerText = finalItem.text;
+                    display.classList.remove('rolling');
+
+                    // 履歴に追加
+                    addHistory(finalItem);
+
+                    // ボタン復帰
+                    spinBtn.disabled = false;
+                    spinBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    isSpinning = false;
+
+                    // お気に入りボタンの状態更新
+                    updateFavoriteButtonState();
+                }
+            }
+            setTimeout(nextStep, currentDelay);
+        }
+
+        // 履歴追加
+        function addHistory(item) {
+            // 重複チェックまたは常に先頭に追加
+            history.unshift({ ...item, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+            if (history.length > 30) history.pop(); // 最大30件
+            localStorage.setItem('gacha_history', JSON.stringify(history));
+            updateLists();
+        }
+
+        // お気に入りトグル
+        function toggleFavoriteCurrent() {
+            if (!currentTheme) {
+                showToast("先にお題をガチャってください！");
+                return;
+            }
+
+            const index = favorites.findIndex(f => f.id === currentTheme.id);
+            if (index > -1) {
+                favorites.splice(index, 1);
+                showToast("お気に入りから削除しました");
+            } else {
+                favorites.push(currentTheme);
+                showToast("お気に入りに追加しました！ ❤️");
+            }
+            localStorage.setItem('gacha_favorites', JSON.stringify(favorites));
+            updateFavoriteButtonState();
+            updateLists();
+        }
+
+        // お気に入りボタンの見た目更新
+        function updateFavoriteButtonState() {
+            const favBtn = document.getElementById('fav-btn');
+            if (!currentTheme) return;
+            const isFav = favorites.some(f => f.id === currentTheme.id);
+            if (isFav) {
+                favBtn.className = "text-red-500 text-2xl transition-colors transform scale-110";
+            } else {
+                favBtn.className = "text-slate-300 hover:text-red-500 text-2xl transition-colors";
+            }
+        }
+
+        // リスト更新（履歴＆お気に入り）
+        function updateLists() {
+            // カウント更新
+            document.getElementById('history-count').innerText = history.length;
+            document.getElementById('fav-count').innerText = favorites.length;
+
+            // 履歴描画
+            const historyContainer = document.getElementById('view-history');
+            if (history.length === 0) {
+                historyContainer.innerHTML = `<div class="text-center text-slate-400 py-6 text-sm">まだ履歴はありません。ガチャを回してみよう！</div>`;
+            } else {
+                historyContainer.innerHTML = history.map((item, idx) => `
+                    <div class="flex items-center justify-between bg-slate-50 hover:bg-orange-50 p-3 rounded-xl border border-slate-100 transition-colors">
+                        <div class="flex items-center gap-3 pr-2">
+                            <span class="text-xs font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded">${categoryNames[item.category] || 'お題'}</span>
+                            <span class="text-sm font-bold text-slate-700">${item.text}</span>
+                        </div>
+                        <button onclick="selectHistoryItem(${item.id})" class="text-xs bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-orange-500 hover:text-white transition-colors shrink-0 font-bold shadow-sm">
+                            再表示
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // お気に入り描画
+            const favContainer = document.getElementById('view-favorites');
+            if (favorites.length === 0) {
+                favContainer.innerHTML = `<div class="text-center text-slate-400 py-6 text-sm">お気に入り登録されたお題はありません。</div>`;
+            } else {
+                favContainer.innerHTML = favorites.map((item, idx) => `
+                    <div class="flex items-center justify-between bg-slate-50 hover:bg-red-50 p-3 rounded-xl border border-slate-100 transition-colors">
+                        <div class="flex items-center gap-3 pr-2">
+                            <span class="text-xs font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">${categoryNames[item.category] || 'お題'}</span>
+                            <span class="text-sm font-bold text-slate-700">${item.text}</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button onclick="selectHistoryItem(${item.id})" class="text-xs bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-orange-500 hover:text-white transition-colors font-bold shadow-sm">
+                                表示
+                            </button>
+                            <button onclick="removeFavorite(${item.id})" class="text-xs bg-white border border-slate-200 text-red-500 px-2.5 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-colors shadow-sm">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 履歴やお気に入りからお題を再表示
+        function selectHistoryItem(id) {
+            const found = themes.find(t => t.id === id);
+            if (found) {
+                currentTheme = found;
+                document.getElementById('theme-display').innerText = found.text;
+                updateFavoriteButtonState();
+                showToast("お題をメイン画面にセットしました！");
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // お気に入り削除
+        function removeFavorite(id) {
+            favorites = favorites.filter(f => f.id !== id);
+            localStorage.setItem('gacha_favorites', JSON.stringify(favorites));
+            updateFavoriteButtonState();
+            updateLists();
+            showToast("お気に入りから削除しました");
+        }
+
+        // タブ切り替え
+        function switchTab(tab) {
+            const tabHistory = document.getElementById('tab-history');
+            const tabFavorites = document.getElementById('tab-favorites');
+            const viewHistory = document.getElementById('view-history');
+            const viewFavorites = document.getElementById('view-favorites');
+
+            if (tab === 'history') {
+                tabHistory.className = "flex-1 pb-3 font-bold text-orange-600 border-b-4 border-orange-500 text-center transition-all";
+                tabFavorites.className = "flex-1 pb-3 font-bold text-slate-400 border-b-4 border-transparent text-center transition-all";
+                viewHistory.classList.remove('hidden');
+                viewFavorites.classList.add('hidden');
+            } else {
+                tabFavorites.className = "flex-1 pb-3 font-bold text-orange-600 border-b-4 border-orange-500 text-center transition-all";
+                tabHistory.className = "flex-1 pb-3 font-bold text-slate-400 border-b-4 border-transparent text-center transition-all";
+                viewFavorites.classList.remove('hidden');
+                viewHistory.classList.add('hidden');
+            }
+        }
+
+        // トースト通知表示
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, -10px)';
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 0)';
+            }, 2500);
+        }
+
+        // スペースキーでガチャを回せるようにする
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                spinGacha();
+            }
+        });
+    </script>
+</body>
+</html>
